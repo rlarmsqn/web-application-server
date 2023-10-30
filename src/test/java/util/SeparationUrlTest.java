@@ -39,4 +39,31 @@ public class SeparationUrlTest {
         log.info("user => {}", user);
 
     }
+
+    @Test
+    public void getUserFromQueryString() {
+//        String queryString = "userId=boo&password=123&name=%EA%B9%80%EA%B7%BC%EB%B6%80&email=srmsqn%40naver.com";
+        String queryString = "userId=boo&password=123";
+        String[] splitParams = queryString.split("&");
+
+        String id = splitParams[0].split("=")[1];
+        String pw = splitParams[1].split("=")[1];
+        String name = null;
+        String email = null;
+
+        if(splitParams.length > 2) {
+            if (splitParams[3] != null) {
+                name = splitParams[3].split("=")[1];
+            }
+
+            if (splitParams[4] != null) {
+                email = splitParams[4].split("=")[1];
+            }
+        }
+
+        log.info(id);
+        log.info(pw);
+        log.info(name);
+        log.info(email);
+    }
 }
