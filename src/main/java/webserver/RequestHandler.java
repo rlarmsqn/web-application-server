@@ -33,7 +33,7 @@ public class RequestHandler extends Thread {
             DataOutputStream dos = new DataOutputStream(out);
             String line;
             String url = null;
-            String status = null;
+            String status;
             int cnt = 0;
             boolean login = false;
             int contentLength = 0;
@@ -46,6 +46,9 @@ public class RequestHandler extends Thread {
                 }
                 if(line.contains("Content-Length")) {
                     contentLength = Integer.parseInt(line.split(":")[1].trim());
+                }
+                if(line.contains("Cookie")) {
+                    login = Boolean.parseBoolean(line.split(":")[1].split("=")[1]);
                 }
             }
 
@@ -74,6 +77,18 @@ public class RequestHandler extends Thread {
                     status = "400";
                     body = Files.readAllBytes(new File("./webapp/user/login_failed.html").toPath());
                     responseResource(out, "/user/login_failed.html");
+                }
+            } else if(url.equals("/user/list")) {
+                if(login) {
+                    log.info("사용자 목록 => {}", DataBase.findAll());
+                    url = "/index.html";
+                    status = "200";
+                    body = Files.readAllBytes(new File("./webapp/index.html").toPath());
+                } else {
+                    log.info("돌아가~");
+                    url = "/user/login.html";
+                    status = "302";
+                    body = Files.readAllBytes(new File("./webapp/index.html").toPath());
                 }
             } else {
                 status = "200";
