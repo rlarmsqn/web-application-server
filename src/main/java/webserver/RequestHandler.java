@@ -36,8 +36,9 @@ public class RequestHandler extends Thread {
             String url = null;
             String status;
             int cnt = 0;
-            boolean login = false;
             int contentLength = 0;
+            boolean login = false;
+            boolean css = false;
 
             while(!(line = br.readLine()).isEmpty()) {
                 if(cnt == 0) {
@@ -106,12 +107,16 @@ public class RequestHandler extends Thread {
                     status = "302";
                     body = Files.readAllBytes(new File("./webapp/index.html").toPath());
                 }
+            } else if(url.endsWith(".css")) {
+                status = "200";
+                css = true;
+                body = Files.readAllBytes(new File("./webapp" + url).toPath());
             } else {
                 status = "200";
                 body = Files.readAllBytes(new File("./webapp" + url).toPath());
             }
 
-            responseHeader(dos, body.length, status, url, login);
+            responseHeader(dos, body.length, status, url, login, css);
             responseBody(dos, body);
 
         } catch (IOException e) {
@@ -119,13 +124,20 @@ public class RequestHandler extends Thread {
         }
     }
 
-    private void responseHeader(DataOutputStream dos, int lengthOfBodyContent, String status, String url, Boolean login) {
+    private void responseHeader(DataOutputStream dos, int lengthOfBodyContent, String status, String url, Boolean login, Boolean css) {
         try {
             if (!status.equals("302")) {
-                dos.writeBytes("HTTP/1.1 " + status + " OK \r\n");
-                dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
-                dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
-                dos.writeBytes("\r\n");
+                if(css) {
+                    dos.writeBytes("HTTP/1.1 " + status + " OK \r\n");
+                    dos.writeBytes("Content-Type: text/css\r\n");
+                    dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
+                    dos.writeBytes("\r\n");
+                } else {
+                    dos.writeBytes("HTTP/1.1 " + status + " OK \r\n");
+                    dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
+                    dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
+                    dos.writeBytes("\r\n");
+                }
             } else {
                 if (login) {
                     dos.writeBytes("HTTP/1.1 302 Redirect \r\n");
