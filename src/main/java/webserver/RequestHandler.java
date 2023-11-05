@@ -9,6 +9,7 @@ import db.DataBase;
 import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.HttpRequest;
 import util.IOUtils;
 import util.SeparationUrl;
 
@@ -27,47 +28,30 @@ public class RequestHandler extends Thread {
         log.debug("New Client Connect! Connected IP : {}, Port : {}", connection.getInetAddress(),
                 connection.getPort());
 
-        try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
-            // TODO 사용자 요청에 대한 처리는 이 곳에 구현하면 된다.
-            InputStreamReader reader = new InputStreamReader(in);
-            BufferedReader br = new BufferedReader(reader);
-            DataOutputStream dos = new DataOutputStream(out);
-            String line;
-            String url = null;
+        try (OutputStream out = connection.getOutputStream()) {
+            HttpRequest httpRequest = new HttpRequest(connection.getInputStream());
+
+            String url = httpRequest.getUrl();
+            Boolean login = httpRequest.getLogin();
+            Boolean css = httpRequest.getCss();
+            Integer contentLength = httpRequest.getContentLength();
+            String content = httpRequest.getContent();
+
             String status;
-            int cnt = 0;
-            int contentLength = 0;
-            boolean login = false;
-            boolean css = false;
 
-            while(!(line = br.readLine()).isEmpty()) {
-                if(cnt == 0) {
-                    url = line.split(" ")[1].equals("/") ? "/index.html" : line.split(" ")[1];
-                    cnt += 1;
-                }
-                if(line.contains("Content-Length")) {
-                    contentLength = Integer.parseInt(line.split(":")[1].trim());
-                }
-                if(line.contains("Cookie")) {
-                    log.info("line => {}", line);
-                    login = Boolean.parseBoolean(line.split(":")[1].split("=")[1]);
-                }
-            }
+            DataOutputStream dos = new DataOutputStream(out);
 
-            log.info("contentLength => {}", contentLength);
             byte[] body;
 
             if(url.equals("/user/create")) {
+                url = "/index.html";
                 status = "302";
                 body = Files.readAllBytes(new File("./webapp/index.html").toPath());
                 if(contentLength != 0) {
-                    String content = IOUtils.readData(br, contentLength);
                     User user = SeparationUrl.getUserFromQueryString(content);
                     DataBase.addUser(user);
                 }
-                url = "/index.html";
             } else if(url.equals("/user/login")) {
-                String content = IOUtils.readData(br, contentLength);
                 User user = SeparationUrl.getUserFromQueryString(content);
                 User loginUser = DataBase.findUserById(user.getUserId());
                 if(loginUser != null) {
